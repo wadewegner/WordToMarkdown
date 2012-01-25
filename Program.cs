@@ -91,7 +91,7 @@ namespace WordToMarkdown
                     {
                         para.Range.InsertBefore(">");
                     }
-                    //waw needed? para.Range.InsertBefore(Environment.NewLine);
+                    para.Range.InsertBefore(Environment.NewLine);
                 }
             }
         }
