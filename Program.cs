@@ -14,8 +14,8 @@ namespace WordToMarkdown
         object noEncodingDialog = true; // http://msdn.microsoft.com/en-us/library/bb216319(office.12).aspx
         object f = false;
         object t = true;
-        private static string pathToSublimeText = @"C:\Program Files\Sublime Text 2\sublime_text.exe";
-        private static string outputFile = Environment.CurrentDirectory + @"\test.md";
+        private static string pathToSublimeText = @"C:\Program Files\Sublime Text 2\sublime_text2.exe";
+        private static string outputFile = Environment.CurrentDirectory + @"\" + Guid.NewGuid().ToString() + ".md";
 
         static void Main(string[] args)
         {
@@ -58,7 +58,7 @@ namespace WordToMarkdown
 
             word.ActiveDocument.SaveAs2(outputFile, Microsoft.Office.Interop.Word.WdSaveFormat.wdFormatDOSText);
 
-            OpenSublimeText(Environment.CurrentDirectory + @"\test.md");
+            OpenSublimeText(outputFile);
         }
 
         static void OpenSublimeText(string f)
@@ -66,7 +66,17 @@ namespace WordToMarkdown
             ProcessStartInfo startInfo = new ProcessStartInfo();
             startInfo.FileName = pathToSublimeText;
             startInfo.Arguments = f;
-            Process.Start(startInfo);
+
+            try
+            {
+                Process.Start(startInfo);
+            }
+            catch
+            {
+                startInfo.FileName = "Notepad.exe";
+                startInfo.Arguments = f;
+                Process.Start(startInfo);
+            }
         }
 
         private static void ReplaceListNoNumber(Application word)
