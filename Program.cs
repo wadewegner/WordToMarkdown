@@ -3,24 +3,27 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using Microsoft.Office.Interop.Word;
 using System.Diagnostics;
+using System.Collections.Generic;
 
 namespace WordToMarkdown
 {
     class Program
     {
         object missing = Missing.Value;
-        object fullFilePath = Environment.CurrentDirectory + @"\TestDocument.docx";
+
         object encoding = Microsoft.Office.Core.MsoEncoding.msoEncodingUTF8;
-        object noEncodingDialog = true; // http://msdn.microsoft.com/en-us/library/bb216319(office.12).aspx
+        object noEncodingDialog = true;
         object f = false;
         object t = true;
+
+        object fullFilePath = Environment.CurrentDirectory + @"\TestDocument.docx";
         private static string pathToSublimeText = @"C:\Program Files\Sublime Text 2\sublime_text.exe";
         private static string outputFile = Environment.CurrentDirectory + @"\" + Guid.NewGuid().ToString() + ".md";
 
         static void Main(string[] args)
         {
             new Program();
-            Console.ReadKey();
+            //Console.ReadKey();
         }
 
         public Program()
@@ -32,6 +35,9 @@ namespace WordToMarkdown
             {
                 word.Selection.Document.Tables[i].ConvertToText();
             }
+
+            // Replace Hyperlinks
+            ReplaceHyperlinks(word);
 
             // replace headings
             ReplaceHeadings(word);
@@ -59,6 +65,8 @@ namespace WordToMarkdown
             word.ActiveDocument.SaveAs2(outputFile, Microsoft.Office.Interop.Word.WdSaveFormat.wdFormatDOSText);
 
             OpenSublimeText(outputFile);
+
+            KillWinWord();
         }
 
         static void OpenSublimeText(string f)
@@ -76,6 +84,25 @@ namespace WordToMarkdown
                 startInfo.FileName = "Notepad.exe";
                 startInfo.Arguments = f;
                 Process.Start(startInfo);
+            }
+        }
+
+        private static void ReplaceHyperlinks(Application word)
+        {
+            StoryRanges ranges = word.ActiveDocument.StoryRanges;
+
+            foreach (Range range in word.ActiveDocument.StoryRanges)
+            {
+                foreach (Field field in range.Fields)
+                {
+                    if (field.Type == WdFieldType.wdFieldHyperlink)
+                    {
+                        string text = field.Result.Text;
+                        string address = field.Result.Hyperlinks[1].Address;
+
+                        field.Result.Text = "[" + text + "](" + address + ")";
+                    }
+                }
             }
         }
 
@@ -133,11 +160,11 @@ namespace WordToMarkdown
                 word = new Application();
             }
 
+            //this will open the Word document
             //word.Visible = true;
 
             word.Documents.Open(ref fullFilePath, ref t, ref f, ref missing, ref missing, ref missing, ref missing, ref missing, ref missing, ref missing, ref encoding, ref missing, ref missing, ref missing, ref noEncodingDialog, ref missing);
 
-            
             return word;
         }
 
@@ -263,7 +290,7 @@ namespace WordToMarkdown
         {
             string returnValue = "";
 
-            for (int i = 0; i < number -1; i++)
+            for (int i = 0; i < number - 1; i++)
             {
                 returnValue = returnValue + "    ";
             }
@@ -273,6 +300,24 @@ namespace WordToMarkdown
             return returnValue;
         }
 
+        private void KillWinWord()
+        {
+            // Get all running winword processes		 
+            List<int> processIds = new List<int>();
+            foreach (Process process in Process.GetProcessesByName("winword"))
+            {
+                process.Kill();
+            }
+
+            //foreach (Process process in Process.GetProcessesByName("winword"))
+            //{
+            //    if (!process.HasExited && !processIds.Contains(process.Id))
+            //    {
+            //        process.Kill();
+            //    }
+            //}
+
+        }
     }
 
 
