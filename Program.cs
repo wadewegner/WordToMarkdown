@@ -14,7 +14,7 @@ namespace WordToMarkdown
         object noEncodingDialog = true; // http://msdn.microsoft.com/en-us/library/bb216319(office.12).aspx
         object f = false;
         object t = true;
-        private static string pathToSublimeText = @"C:\Program Files\Sublime Text 2\sublime_text2.exe";
+        private static string pathToSublimeText = @"C:\Program Files\Sublime Text 2\sublime_text.exe";
         private static string outputFile = Environment.CurrentDirectory + @"\" + Guid.NewGuid().ToString() + ".md";
 
         static void Main(string[] args)
