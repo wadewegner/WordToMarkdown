@@ -2,6 +2,7 @@
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Microsoft.Office.Interop.Word;
+using System.Diagnostics;
 
 namespace WordToMarkdown
 {
@@ -13,6 +14,8 @@ namespace WordToMarkdown
         object noEncodingDialog = true; // http://msdn.microsoft.com/en-us/library/bb216319(office.12).aspx
         object f = false;
         object t = true;
+        private static string pathToSublimeText = @"C:\Program Files\Sublime Text 2\sublime_text.exe";
+        private static string outputFile = Environment.CurrentDirectory + @"\test.md";
 
         static void Main(string[] args)
         {
@@ -22,30 +25,7 @@ namespace WordToMarkdown
 
         public Program()
         {
-            object wordObject = null;
-            try
-            {
-                wordObject = Marshal.GetActiveObject("Word.Application");
-            }
-            catch (Exception)
-            {
-                // Do nothing.
-            }
-
-            Application word = null;
-            if (wordObject != null)
-            {
-                word = (Application)wordObject;
-            }
-            else
-            {
-                word = new Application();
-            }
-
-            word.Visible = true;
-
-
-            word.Documents.Open(ref fullFilePath, ref t, ref f, ref missing, ref missing, ref missing, ref missing, ref missing, ref missing, ref missing, ref encoding, ref missing, ref missing, ref missing, ref noEncodingDialog, ref missing);
+            Application word = LoadWordDocument();
 
             // convert tables to text
             for (int i = word.Selection.Document.Tables.Count; i > 0; i--)
@@ -53,35 +33,11 @@ namespace WordToMarkdown
                 word.Selection.Document.Tables[i].ConvertToText();
             }
 
-
             // replace headings
-            for (int i = 1; i < 7; i++)
-            {
-                word.Selection.HomeKey(WdUnits.wdStory);
+            ReplaceHeadings(word);
 
-                bool replaceHeading = true;
-                while (replaceHeading)
-                {
-                    replaceHeading = ReplaceHeading(word, i);
-                }
-
-            }
-
-
-            //
-            for (int i = word.Selection.Document.Paragraphs.Count; i > 0; i--)
-            {
-                Paragraph para = word.Selection.Document.Paragraphs[i];
-
-                if (para.Range.ListFormat.ListType == WdListType.wdListNoNumbering)
-                {
-                    if (para.LeftIndent > 0)
-                    {
-                        para.Range.InsertBefore(">");
-                    }
-                    //waw needed? para.Range.InsertBefore(Environment.NewLine);
-                }
-            }
+            // convert no number lists to indent
+            ReplaceListNoNumber(word);
 
             // replace bold
             bool replaceOneBold = true;
@@ -99,6 +55,80 @@ namespace WordToMarkdown
 
             // replace lists
             ReplaceLists(word);
+
+            word.ActiveDocument.SaveAs2(outputFile, Microsoft.Office.Interop.Word.WdSaveFormat.wdFormatDOSText);
+
+            OpenSublimeText(Environment.CurrentDirectory + @"\test.md");
+        }
+
+        static void OpenSublimeText(string f)
+        {
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            startInfo.FileName = pathToSublimeText;
+            startInfo.Arguments = f;
+            Process.Start(startInfo);
+        }
+
+        private static void ReplaceListNoNumber(Application word)
+        {
+            for (int i = word.Selection.Document.Paragraphs.Count; i > 0; i--)
+            {
+                Paragraph para = word.Selection.Document.Paragraphs[i];
+
+                if (para.Range.ListFormat.ListType == WdListType.wdListNoNumbering)
+                {
+                    if (para.LeftIndent > 0)
+                    {
+                        para.Range.InsertBefore(">");
+                    }
+                    //waw needed? para.Range.InsertBefore(Environment.NewLine);
+                }
+            }
+        }
+
+        private void ReplaceHeadings(Application word)
+        {
+            for (int i = 1; i < 7; i++)
+            {
+                word.Selection.HomeKey(WdUnits.wdStory);
+
+                bool replaceHeading = true;
+                while (replaceHeading)
+                {
+                    replaceHeading = ReplaceHeading(word, i);
+                }
+            }
+        }
+
+        private Application LoadWordDocument()
+        {
+            object wordObject = null;
+            Application word = null;
+
+            try
+            {
+                wordObject = Marshal.GetActiveObject("Word.Application");
+            }
+            catch (Exception)
+            {
+                // Do nothing.
+            }
+
+            if (wordObject != null)
+            {
+                word = (Application)wordObject;
+            }
+            else
+            {
+                word = new Application();
+            }
+
+            //word.Visible = true;
+
+            word.Documents.Open(ref fullFilePath, ref t, ref f, ref missing, ref missing, ref missing, ref missing, ref missing, ref missing, ref missing, ref encoding, ref missing, ref missing, ref missing, ref noEncodingDialog, ref missing);
+
+            
+            return word;
         }
 
         private bool ReplaceHeading(Application word, int number)
